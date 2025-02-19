@@ -20,7 +20,7 @@ jobs:
           git config --global user.email 'action@github.com'
           
           # Setup sparse checkout
-          git remote add upstream https://github.com/iiits/alumni-portal.git
+          git remote add upstream https://github.com/iiits/alumni-portal-backend.git
           git sparse-checkout set --no-cone '/*' '!.github/workflows'
           
           # Sync while preserving local workflows
