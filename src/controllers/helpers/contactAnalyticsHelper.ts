@@ -5,18 +5,22 @@ export interface ContactAnalytics {
     total: number;
     resolved: number;
     unresolved: number;
-    timeline: {
-        '7d': Array<{ date: string; count: number }>;
-        '30d': Array<{ date: string; count: number }>;
-    };
+    timeseries: Array<{
+        date: string;
+        count: number;
+        resolved: number;
+        unresolved: number;
+    }>;
 }
 
 const getTimeline = async (
     days: number,
-): Promise<Array<{ date: string; count: number }>> => {
+): Promise<
+    Array<{ date: string; count: number; resolved: number; unresolved: number }>
+> => {
     const now = new Date();
     const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    // Group by day
+    // Group by day and resolved status
     const pipeline: PipelineStage[] = [
         {
             $match: {
@@ -26,34 +30,56 @@ const getTimeline = async (
         {
             $group: {
                 _id: {
-                    $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+                    date: {
+                        $dateToString: {
+                            format: '%Y-%m-%d',
+                            date: '$createdAt',
+                        },
+                    },
+                    resolved: '$resolved',
                 },
                 count: { $sum: 1 },
+            },
+        },
+        {
+            $group: {
+                _id: '$_id.date',
+                count: { $sum: '$count' },
+                resolved: {
+                    $sum: {
+                        $cond: [{ $eq: ['$_id.resolved', true] }, '$count', 0],
+                    },
+                },
+                unresolved: {
+                    $sum: {
+                        $cond: [{ $eq: ['$_id.resolved', false] }, '$count', 0],
+                    },
+                },
             },
         },
         { $sort: { _id: 1 } },
     ];
     const results = await ContactUs.aggregate(pipeline);
-    return results.map(r => ({ date: r._id, count: r.count }));
+    return results.map(r => ({
+        date: r._id,
+        count: r.count,
+        resolved: r.resolved,
+        unresolved: r.unresolved,
+    }));
 };
 
 export const getContactAnalyticsDetailed =
     async (): Promise<ContactAnalytics> => {
-        const [total, resolved, unresolved, timeline7d, timeline30d] =
-            await Promise.all([
-                ContactUs.countDocuments(),
-                ContactUs.countDocuments({ resolved: true }),
-                ContactUs.countDocuments({ resolved: false }),
-                getTimeline(7),
-                getTimeline(30),
-            ]);
+        const [total, resolved, unresolved, timeseries] = await Promise.all([
+            ContactUs.countDocuments(),
+            ContactUs.countDocuments({ resolved: true }),
+            ContactUs.countDocuments({ resolved: false }),
+            getTimeline(30),
+        ]);
         return {
             total,
             resolved,
             unresolved,
-            timeline: {
-                '7d': timeline7d,
-                '30d': timeline30d,
-            },
+            timeseries,
         };
     };
