@@ -325,6 +325,16 @@ export const adminUpdateUser = async (
             updates.verified = Boolean(req.body.verified);
         }
 
+        if (req.body.role !== undefined && req.body.role === 'student') {
+            const user = await User.findOne({ id: req.params.id });
+            if (user?.role === 'alumni') {
+                await AlumniDetails.findOneAndUpdate(
+                    { id: user.alumniDetails },
+                    { verified: false },
+                );
+            }
+        }
+
         const user = await User.findOneAndUpdate(
             { id: req.params.id },
             updates,

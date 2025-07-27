@@ -94,20 +94,30 @@ export const getAlumniDetails = async (
         let limit = Math.max(1, parseInt(req.query.limit as string) || 10);
         const skip = (page - 1) * limit;
 
-        // Parse filters from query parameters
-        const filters: UserFilters = {
-            role: 'alumni',
-        };
+        // Build filters using $and to combine all constraints
+        const andFilters: any[] = [
+            {
+                $or: [
+                    { role: 'alumni' },
+                    {
+                        role: 'student',
+                        alumniDetails: { $exists: true, $ne: null },
+                    },
+                ],
+            },
+        ];
 
         // Search functionality
         const search = req.query.search as string;
         if (search) {
             const searchRegex = { $regex: search, $options: 'i' };
-            filters.$or = [
-                { name: searchRegex },
-                { collegeEmail: searchRegex },
-                { personalEmail: searchRegex },
-            ];
+            andFilters.push({
+                $or: [
+                    { name: searchRegex },
+                    { collegeEmail: searchRegex },
+                    { personalEmail: searchRegex },
+                ],
+            });
         }
 
         // Batch filter
@@ -117,7 +127,7 @@ export const getAlumniDetails = async (
                 .map(Number)
                 .filter(num => !isNaN(num) && num >= 2014 && num <= maxYear);
             if (batchNumbers.length) {
-                filters.batch = { $in: batchNumbers };
+                andFilters.push({ batch: { $in: batchNumbers } });
             }
         }
 
@@ -132,13 +142,16 @@ export const getAlumniDetails = async (
                 | 'ECE'
             )[];
             if (departments.length) {
-                filters.department = { $in: departments };
+                andFilters.push({ department: { $in: departments } });
             }
         }
 
+        const filters =
+            andFilters.length > 1 ? { $and: andFilters } : andFilters[0];
+
         const users = await User.find(filters)
             .select(
-                'id name collegeEmail personalEmail userId username batch department profiles role -_id',
+                'id name collegeEmail personalEmail userId username batch department profiles bio role -_id',
             )
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -297,6 +310,13 @@ export const verifyAlumniDetails = async (
             apiNotFound(res, 'Alumni details not found');
             return;
         }
+
+        await User.findOneAndUpdate(
+            { alumniDetails: req.params.id },
+            { role: req.params.verified === 'true' ? 'alumni' : 'student' },
+            { new: true, runValidators: true },
+        );
+
         apiSuccess(res, alumniDetails, 'Alumni details verified successfully');
     } catch (error) {
         apiError(
@@ -321,9 +341,24 @@ export const deleteAlumniDetails = async (
             return;
         }
 
-        const alumniDetails = await AlumniDetails.findByIdAndDelete(
-            req.params.id,
+        const user = await User.findOne({ alumniDetails: req.params.id })
+            .select('alumniDetails')
+            .lean();
+
+        if (!user?.alumniDetails) {
+            apiNotFound(res, 'Alumni details not found for this user');
+            return;
+        }
+
+        await User.updateOne(
+            { id: req.params.id },
+            { alumniDetails: null, role: 'student' },
         );
+
+        const alumniDetails = await AlumniDetails.findOneAndDelete({
+            id: user.alumniDetails,
+        });
+
         if (!alumniDetails) {
             apiNotFound(res, 'Alumni details not found');
             return;
