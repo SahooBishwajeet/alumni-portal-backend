@@ -50,7 +50,7 @@ export const getFilteredEvents = async (
 
         const events = await Event.find(query)
             .sort({ dateTime: 1 })
-            .select('-__v');
+            .select('-__v -_id');
 
         apiSuccess(res, events, 'Events retrieved successfully');
     } catch (error) {

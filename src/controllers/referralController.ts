@@ -277,6 +277,7 @@ export const getUserReferrals = async (
                 foreignField: 'id',
                 select: '-_id id name collegeEmail personalEmail',
             })
+            .select('-_id -__v')
             .sort({ lastApplyDate: -1 });
 
         apiSuccess(res, referrals, 'User referrals retrieved successfully');

@@ -124,7 +124,7 @@ export const getAllContactForms = async (
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .select('-__v')
+                .select('-__v -_id')
                 .lean(),
             ContactUs.countDocuments(filters),
         ]);
