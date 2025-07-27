@@ -84,10 +84,7 @@ export const getAllContactForms = async (
 ): Promise<void> => {
     try {
         let page = Math.max(1, parseInt(req.query.page as string) || 1);
-        let limit = Math.min(
-            100,
-            Math.max(1, parseInt(req.query.limit as string) || 10),
-        );
+        let limit = Math.max(1, parseInt(req.query.limit as string) || 10);
         const skip = (page - 1) * limit;
 
         const filters: any = {};
@@ -215,6 +212,7 @@ export const respondToContactQuery = async (
             contactQuery.name,
             contactQuery.subject,
             contactQuery.message,
+            subject,
             message,
             contactQuery.createdAt.toISOString(),
         );

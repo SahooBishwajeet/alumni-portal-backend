@@ -65,10 +65,7 @@ export const getFilteredEvents = async (
 export const getEvents = async (req: Request, res: Response): Promise<void> => {
     try {
         let page = Math.max(1, parseInt(req.query.page as string) || 1);
-        let limit = Math.min(
-            100,
-            Math.max(1, parseInt(req.query.limit as string) || 10),
-        );
+        let limit = Math.max(1, parseInt(req.query.limit as string) || 10);
         const skip = (page - 1) * limit;
 
         const filters: any = {};
@@ -104,7 +101,13 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
         } else if (endDate) {
             filters.dateTime = { $lte: endDate };
         } else {
-            filters.dateTime = { $gte: now };
+            filters.$or = [
+                { dateTime: { $gte: now } },
+                {
+                    dateTime: { $lte: now },
+                    endDateTime: { $gte: now },
+                },
+            ];
         }
 
         if (req.query.type) {
@@ -130,6 +133,13 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
 
         const [events, total] = await Promise.all([
             Event.find(filters)
+                .populate({
+                    path: 'postedBy',
+                    model: 'User',
+                    localField: 'postedBy',
+                    foreignField: 'id',
+                    select: '-_id id name collegeEmail personalEmail',
+                })
                 .sort(sort)
                 .skip(skip)
                 .limit(limit)

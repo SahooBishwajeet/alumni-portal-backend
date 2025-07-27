@@ -3,6 +3,7 @@ export const renderAdminContactResponseEmail = (
     userEmail: string,
     originalSubject: string,
     originalMessage: string,
+    adminSubject: string,
     adminMessage: string,
     date: string,
 ): string => {
@@ -20,6 +21,7 @@ export const renderAdminContactResponseEmail = (
         </div>
         <div style="margin: 20px 0; padding: 20px; border: 1px solid #cce5ff; border-radius: 5px; background-color: #eaf4ff;">
             <h3 style="margin-bottom: 10px;">Admin Response</h3>
+            <p><strong>Subject:</strong> ${adminSubject}</p>
             <div style="padding: 10px; background-color: #f1f8ff; border-radius: 5px;">
                 ${adminMessage}
             </div>

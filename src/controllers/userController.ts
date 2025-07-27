@@ -27,10 +27,7 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
 
         // Validate and parse pagination params
         let page = Math.max(1, parseInt(req.query.page as string) || 1);
-        let limit = Math.min(
-            100,
-            Math.max(1, parseInt(req.query.limit as string) || 10),
-        );
+        let limit = Math.max(1, parseInt(req.query.limit as string) || 10);
         const skip = (page - 1) * limit;
 
         // Parse filters from query parameters
@@ -335,9 +332,7 @@ export const adminUpdateUser = async (
                 new: true,
                 runValidators: true,
             },
-        ).select(
-            'id name collegeEmail personalEmail userId username batch department profiles role verified',
-        );
+        ).select('-_id -__v -password');
 
         if (!user) {
             apiNotFound(res, 'User not found');
