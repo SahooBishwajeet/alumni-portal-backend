@@ -238,7 +238,7 @@ export const updateUser = async (
                 new: true,
                 runValidators: true,
             },
-        ).select('-password -verified -__v');
+        ).select('-password -verified -_id -__v');
 
         if (!user) {
             apiNotFound(res, 'User not found');

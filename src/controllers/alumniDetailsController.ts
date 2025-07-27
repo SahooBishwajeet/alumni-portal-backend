@@ -210,9 +210,9 @@ export const getAlumniDetailsById = async (
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const alumniDetails = await AlumniDetails.findById(
-            req.params.id,
-        ).lean();
+        const alumniDetails = await AlumniDetails.findById(req.params.id)
+            .select('-_id -__v')
+            .lean();
         if (!alumniDetails) {
             apiNotFound(res, 'Alumni details not found');
             return;
