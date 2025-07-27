@@ -55,6 +55,7 @@ export const sendContactResponseEmail = async (
     name: string,
     originalSubject: string,
     originalMessage: string,
+    adminSubject: string,
     adminMessage: string,
     date: string,
 ) => {
@@ -63,6 +64,7 @@ export const sendContactResponseEmail = async (
         email,
         originalSubject,
         originalMessage,
+        adminSubject,
         adminMessage,
         date,
     );
